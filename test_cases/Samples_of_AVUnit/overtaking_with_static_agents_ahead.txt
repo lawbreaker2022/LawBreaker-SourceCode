@@ -1,0 +1,56 @@
+// overtaking with static agents ahead
+
+map_name = "san_francisco";
+car_model = "gt_sensors";
+    initial_position = "lane_221" -> 5;
+ego_init_state = (initial_position);
+target_position = "lane_221" -> 110;
+ego_target_state = (target_position);
+vehicle_type = (car_model);
+ego_vehicle = AV(ego_init_state, ego_target_state, vehicle_type);
+
+//npc1: start from lane_221
+npc1_init_position = "lane_221" -> 20;
+npc1 = Vehicle((npc1_init_position,,0.5));
+
+//npc2: start from lane_221
+npc2_init_position = "lane_221" -> 40;
+npc2 = Vehicle((npc2_init_position,,1));
+
+//npc3: start from lane_221
+npc3_init_position = "lane_221" -> 60;
+npc3 = Vehicle((npc3_init_position,,1.2));
+
+
+time = 12:00;
+weather = {rain:0.5, snow: 0.1, wetness: heavy};
+evn = Environment(time, weather);
+scenario0 = CreateScenario{load(map_name);
+                 ego_vehicle;
+                 {npc1, npc2, npc3}; 
+                 {}; // no pedestrians;
+                 {}; // no obstacles;
+                 evn; 
+};
+
+Trace trace = EXE(scenario0);
+
+ego_vehicle_state= trace[ego];
+
+npc_vehicle1_truth = trace[truth][npc1];
+npc_vehicle2_truth = trace[truth][npc2];
+npc_vehicle3_truth = trace[truth][npc3];
+
+
+dis_target = dis(ego_vehicle_state, target_position);
+
+dis1 = dis(ego_vehicle_state, npc_vehicle1_truth);
+dis2 = dis(ego_vehicle_state, npc_vehicle2_truth);
+dis3 = dis(ego_vehicle_state, npc_vehicle3_truth);
+
+
+statement1 = dis1 >= 0.5;
+statement2 = dis2 >= 0.5;
+statement3 = dis3 >= 0.5;
+
+trace |= (G(statement1 & statement2 & statement3)) & (F dis_target <= 2.0);

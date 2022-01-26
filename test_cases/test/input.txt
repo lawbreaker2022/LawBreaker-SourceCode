@@ -1,0 +1,108 @@
+map = "SanFrancisco111";
+
+car_model = "Lincoln2017MKZ (Apollo 6.0)";
+car_color = green;
+ego_init_position = (553090.05225720361, 4182687.8, +10.1246);   //default coordinate frame is ENU    10.2880001068115,
+// ego_heading = 90 deg;
+//ego_init_state = (ego_init_position, ego_heading);
+ego_init_state = (ego_init_position);
+ego_target_position = (3,4); //default coordinate frame is ENU    10.1325969696045,
+ego_target_state = (ego_target_position);
+vehicle_type = (car_model, car_color);
+ego_vehicle = AV(ego_init_state, ego_target_state, vehicle_type);
+// ego_vehicle = AV(ego_init_state, ego_target_state);
+
+heading1 = 10 deg related to ego_vehicle;
+npc_init_state = ("lane_39"->50.0, heading1, 1.0);//the initial position is the start point of lane 1, the orientation of the vehicle is along with the lane direction, and the initial speed is 1.5m/s
+motion = Uniform(("lane_39"->50.0, , 2.0));
+npc1_type = "SUV1";
+npc1 = Vehicle(npc_init_state, motion, , (npc1_type));
+
+heading2 = 40 deg related to npc1;
+npc_init_state2 = ("lane_38"->0.0, heading2 ,2.0);
+npc_state2 = (("lane_755"->0.0), ("lane_41"->0));
+npc_target_state2 = ("lane_41"->50.0);
+npc2_type = "SUV";
+npc2 =Vehicle(npc_init_state2, Waypoint(npc_state2), npc_target_state2, (npc2_type));
+//heading = 180 deg related to EGO;
+// heading = 3.14 rad related to "lane_41"->50;
+//heading3 = 3.14 rad related to npc2;
+heading3 = 0.5pi rad related to npc2;
+npc_init_state3 = ("lane_779"->0.0, heading3, 0.0);
+npc3 = Vehicle(npc_init_state3);
+
+npc = {npc1, npc2, npc3};
+
+p_init =((553080.05225720361, 4182687.8), , 0.5);
+p_heading = 0.5pi rad related to EGO;
+p_end = ((553050.05225720361, 4182687.8), p_heading, 0.0);
+p_waypoint=(((553070.05225720361, 4182687.8), , 0.4),((553060.05225720361, 4182687.8), , 0.3),((553055.05225720361, 4182687.8), , 0.1));
+p_motion = W(p_waypoint);
+p_motion1 = Uniform(p_init);
+people=Pedestrian(p_init,p_motion, p_end);
+people1=Pedestrian(p_init,p_motion1, p_end);
+
+scenario0 = CreateScenario{load(map);
+			        ego_vehicle;
+			        npc; // no other vehicles;
+			        {people}; // no pedestrians;
+			        {}; // no obstacles;
+			        {}; // default environment
+			        {}; // no traffic constraints
+};
+
+npc_2 = {npc1, npc2};
+scenario1 = CreateScenario{load(map);
+			        ego_vehicle;
+			        npc_2; // no other vehicles;
+			        {people, people1}; // no pedestrians;
+			        {}; // no obstacles;
+			        {}; // default environment
+			        {}; // no traffic constraints
+};
+
+Trace trace = EXE(scenario0);
+Trace trace1 = EXE(scenario1);
+
+
+ego_vehicle_state= trace[ego];
+npc_vehicle1= trace[perception][npc1];
+npc_vehicle1_truth= trace[truth][npc1];
+npc_vehicle2 = trace[perception][npc2];
+npc_vehicle2_truth = trace[truth][npc2];
+npc_vehicle3= trace[perception][npc3];
+npc_vehicle3_truth =  trace[truth][npc3];
+pedestrian_truth = trace[perception][people];
+pedestrian_truth1 = trace[truth][people];
+
+
+// assertion related to npc_vehicle1
+p_required1 = "lane_39"->10.0;
+dis2required1 = dis(ego_vehicle_state,"lane_39"->10.0);
+
+v3 = vel(pedestrian_truth, (1,2,+5));
+
+v4 = spd(ego_vehicle_state, 15);
+v6 = acc(ego_vehicle_state, (1,-9));
+
+dis1 = dis(ego_vehicle_state, npc_vehicle1_truth);
+error1 = diff(npc_vehicle1, npc_vehicle1_truth);
+
+
+dis5 = dis(ego_vehicle_state, npc_vehicle1_truth);
+la1 = vel(ego_vehicle_state, (1,2,+9))  <=50 & error1 <= vel(ego_vehicle_state, (1,2,+9)) ;
+p_dis1 = dis(ego_vehicle_state, npc_vehicle1);
+la5 = la1 & error1 <= 0.1;
+
+
+perception6 = la5 & error1 <= 0.1;
+perception7 = ~perception6 & la5;
+perception8 = G perception6;
+tt6 = acc(ego_vehicle_state, (1,-9))>= 0;
+
+
+trace |= G tt6;// perception statement
+trace1 |= G la1;// perception statement
+trace |= G dis1<=50 & error1 <= 0.1 & dis(ego_vehicle_state, npc_vehicle1) >= 0.1;
+trace1 |= G dis1<=50 & error1 <= 0.1 & dis(ego_vehicle_state, npc_vehicle1) >= 0.1;
+

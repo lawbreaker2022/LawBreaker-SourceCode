@@ -1,0 +1,130 @@
+// overtaking with static agents ahead
+
+map_name = "san_francisco";
+car_model = "gt_sensors";
+    initial_position = "lane_221" -> 5;
+ego_init_state = (initial_position);
+target_position = "lane_221" -> 110;
+ego_target_state = (target_position);
+vehicle_type = (car_model);
+ego_vehicle = AV(ego_init_state, ego_target_state, vehicle_type);
+
+//npc1: start from lane_221
+npc1_init_position = "lane_221" -> 20;
+npc1 = Vehicle((npc1_init_position,,0.5));
+
+//npc2: start from lane_221
+npc2_init_position = "lane_221" -> 40;
+npc2 = Vehicle((npc2_init_position,,1));
+
+//npc3: start from lane_221
+npc3_init_position = "lane_221" -> 60;
+npc3 = Vehicle((npc3_init_position,,1.2));
+
+
+time = 12:00;
+weather = {rain:0.5, snow: 0.1, wetness: heavy};
+evn = Environment(time, weather);
+scenario0 = CreateScenario{load(map_name);
+                 ego_vehicle;
+                 {npc1, npc2, npc3}; 
+                 {}; // no pedestrians;
+                 {}; // no obstacles;
+                 evn; 
+};
+
+Trace trace = EXE(scenario0);
+
+//law38
+//Green Lights
+law38_sub1_1 = (trafficLightAhead.color == green) & (stoplineAhead(2) | junctionAhead(2)) & ~PriorityNPCAhead & ~PriorityPedsAhead;
+law38_sub1_2 = F[0,2](speed > 0.5);
+law38_sub1 = G (law38_sub1_1 -> law38_sub1_2); 
+//Yellow Lights
+law38_sub2_1 = ((trafficLightAhead.color == yellow) & (stoplineAhead(0) | currentLane.number .+ 1 == 0)) -> (F[0,2] (speed > 0.5));
+law38_sub2_2 = ((trafficLightAhead.color == yellow) & stoplineAhead(3.5) & ~stoplineAhead(0.5) & currentLane.number > 0) -> (F[0,3] (speed < 0.5));
+law38_sub2 = G (law38_sub2_1 & law38_sub2_2); 
+//Red LightS
+law38_sub3_1 = ((trafficLightAhead.color == red) & (stoplineAhead(2) | junctionAhead(2)) & ~(direction == right)) -> (F[0,3] (speed < 0.5));
+law38_sub3_2 = ((trafficLightAhead.color == red) & (stoplineAhead(2) | junctionAhead(2)) & direction == right & ~PriorityNPCAhead & ~PriorityPedsAhead) -> (F[0,2] (speed > 0.5));
+law38_sub3 = G (law38_sub3_1 & law38_sub3_2); 
+law38 = law38_sub1 & law38_sub2 & law38_sub3;
+
+
+//law44
+law44_sub1 = currentLane.number >= 2;
+law44_sub2 = (speed >= speedLimit.lowerLimit) & (speed <= speedLimit.upperLimit);
+law44_sub3 = isLaneChanging & currentLane.number >= 2;
+law44_sub4 = G(law44_sub1 -> law44_sub2);
+law44_sub5 = G(law44_sub3 -> ~PriorityNPCAhead);
+law44 = law44_sub4 & law44_sub5;
+
+
+//law45
+law45 = G( speed >= speedLimit.lowerLimit & speed <= speedLimit.upperLimit);
+
+
+//law46
+law_46_sub2 = G( (direction == left | direction == right | isTurningAround) -> (speed <= 30 ));
+law_46_sub3 = G( (rain >= 0.5 | fog >= 0.5 | snow >=0.5 | visibility <= 50 ) -> (speed <= 30));
+law46 = (law_46_sub2) & (law_46_sub3);
+
+//law47
+law47_sub1 = (turnSignal == left) & ((F[-1,2](hornOn)) | ((highBeamOn & (highBeamOn -> (F[0, 2](lowBeamOn)) ) ) | (lowBeamOn & (lowBeamOn -> (F[0, 2](highBeamOn)) ) ))) & (F[0, 10]( (turnSignal == right) & (((isLaneChanging) -> (NearestNPC(5))) & (isLaneChanging) ) ));
+law47 = G(isOverTaking -> law47_sub1);
+
+
+//law50
+law50 = G(~(gear == 2)); 
+
+
+//law51
+//turn_left
+law51_sub3_1 =(trafficLightAhead.color == green & direction == left & Time <= 20:00 & Time >= 7:00) -> (turnSignal == left);
+law51_sub3_2 =(trafficLightAhead.color == green & direction == left & (Time >= 20:00 | Time <= 7:00)) -> (turnSignal == left & lowBeamOn);
+law51_sub3 = G(law51_sub3_1 & law51_sub3_2);  
+//go_in_line_at_green
+law51_sub4_1 = trafficLightAhead.color == green & (~NPCAhead(8) | (( NPCAhead(8) -> F[0,2](NPCAhead.speed > 0.5)  ) & NPCAhead(8)));
+law51_sub4_2 = (F[0, 3](speed > 0.5)) & ~NPCAhead(0.5);
+law51_sub4 = G(law51_sub4_1 -> law51_sub4_2);
+//stop_in_line_at_red
+law51_sub5_1 = trafficLightAhead.color == red & (stoplineAhead(2) | junctionAhead(2) | NPCAhead(0.5));
+law51_sub5_2 = F[0, 2](speed < 0.5);
+law51_sub5 = G(law51_sub5_1 -> law51_sub5_2);  
+//tuen_right_stop_in_line_at_red
+law51_sub6 = G((direction == right & NPCAhead(2) & (F[0, 2](NPCAhead.speed < 0.5)) ) -> F[0, 3] (speed < 0.5));
+//priority_for_straight
+law51_sub7 = G(((direction == right | direction == left) & (PriorityNPCAhead | PriorityPedsAhead)) -> F[0, 2] (speed < 0.5));
+law51 = law51_sub3 & law51_sub4 & law51_sub5 & law51_sub6 & law51_sub7;
+
+
+//law52
+law52 = G((signalAhead == 0 & (PriorityNPCAhead | PriorityPedsAhead) & junctionAhead(1)) -> F[0, 2] (speed < 0.5));
+
+
+//law53
+law53 = G((isTrafficJam & (NPCAhead.speed < 0.5 | NPCAhead(0.5) | junctionAhead(1) ))-> F[0, 2] (speed < 0.5));
+
+//law57
+law57_sub1 = G(direction == left ->  turnSignal == left);
+law57_sub2 = G(direction == right ->  turnSignal == right);
+law57 = law57_sub1 & law57_sub2;
+
+//law58
+law58_sub1_1 = (~streetLightOn & (Time >= 20:00 | Time <= 7:00) ) | (rain >= 0.5 | fog >= 0.5 | snow >= 0.5);
+law58_sub1 = (law58_sub1_1 & ~NPCAhead(10))-> highBeamOn;
+law58_sub2 =  NPCAhead(10) -> ~highBeamOn;
+law58_sub3 = fog >= 0.5 -> (fogLightOn & warningFlashOn);
+law58 = G(law58_sub1 & law58_sub2 & law58_sub3);
+
+//law59
+law59_sub1 = (crosswalkAhead(5) | (signalAhead == 0 & junctionAhead(1)) ) & (Time >= 20:00 | Time <= 7:00);
+law59_sub2 = F[0,3](highBeamOn & (highBeamOn -> F[0,3](lowBeamOn)) ) | F[0,3](lowBeamOn & (lowBeamOn -> F[0,3](highBeamOn)) );
+law59 = G(law59_sub1 ->  law59_sub2);
+
+
+//law62
+law62 = G (~honkingAllowed ->  ~hornOn);
+
+
+trace |= law38 & law44 & law45 & law46 & law47 & law50 & law51 & law52 & law53 & law57 & law58 & law59 & law62; 

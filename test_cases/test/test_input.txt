@@ -1,0 +1,187 @@
+map_name = "Single"+"Lane";
+
+map_name1 = "Road";
+
+map_name2 = map_name + map_name1;
+
+yyyy= (1,2,-3)+((1,2,+2) + (1,2,-3));
+
+yyyy1 = yyyy+(1,2,-3);
+
+c = 2^(1+2)*5/(4+3);
+xx = 10;
+b = c*xx+5/3;
+
+car_model = "gt_sensors";
+car_color = green;
+
+ego_init_position22 = IMU yyyy;
+ego_init_position = IMU(xx, 4182687.8, +2);   //default coordinate frame is ENU    10.2880001068115,
+ego_init_state = (ego_init_position);
+
+a="test";
+b2 = 50;
+test_position = IMU a -> b2;
+
+p3="lane_9"->10.0;
+
+ego_target_position = (b, b2 , -b2); //default coordinate frame is ENU    10.1325969696045,
+ego_target_state = (yyyy1);
+vehicle_type = (car_model, car_color);
+ego_vehicle = AV(ego_init_state, ego_target_state, vehicle_type);
+
+heading1 = 10.01 deg related to a -> b2;
+
+heading55 = 10 pi deg related to ego_vehicle;
+npc_init_state = ("lane_39"->50.0, heading1, b+1);//the initial position is the start point of lane 1, the orientation of the vehicle is along with the lane direction, and the initial speed is 1.5m/s
+npc1_type = "Sed"+"an"; 
+npc_state1 = (("lane_41"->50.0, ,3.0));
+npc1 = Vehicle(npc_init_state, Waypoint(npc_state1), , (npc1_type));
+
+heading2 = 50 deg related to npc1;
+
+lane_name = "lane"+"_666666";
+npc_init_state2 = (lane_name->0.0, ,1.0);
+npc_state2 = (("lane_38"->1.0, ,10.0), ("lane_38"->50.0, , 4.0), ("lane_755"->0.0, , 4.0), ("lane_41"->10.0, ,5.0));
+//npc_state2 = (("lane_755"->0.0, , 4.0), ("lane_41"->10.0, ,5.0));
+npc_target_state2 = ("lane_41"->100.0);
+npc2_type = "SUV";
+npc2 =Vehicle(npc_init_state2, Waypoint(npc_state2), npc_target_state2, (npc2_type));
+//npc2 =Vehicle(npc_init_state2, , npc_target_state2, (npc2_type));
+
+
+npc_init_state3 = ("lane_779"->0.0, , 1.0);
+npc3 = Vehicle(npc_init_state3);
+
+npc = {npc1, npc2, npc3};
+
+time = 12:00;
+weather = {rain:0.5, snow: 0.1, wetness: heavy};
+
+evn = Environment(time, weather);
+
+obs = Obstacle ((1,2,+3),(sphere,b2));
+
+
+scenario0 = CreateScenario{load(map_name2);
+					ego_vehicle;
+					npc; // no other vehicles;
+					{}; // no pedestrians;
+					{obs}; // no obstacles;
+					evn; // default environment
+					{}; // no traffic constraints
+};
+
+
+Trace trace = EXE(scenario0);
+
+ego_vehicle_state= trace[ego];
+npc_vehicle1= trace[perception][npc1];
+npc_vehicle1_truth= trace[truth][npc1];
+npc_vehicle2 = trace[perception][npc2];
+npc_vehicle2_truth = trace[truth][npc2];
+npc_vehicle3= trace[perception][npc3];
+npc_vehicle3_truth = trace[truth][npc3];
+
+
+
+dis1 = dis(ego_vehicle_state, npc_vehicle1_truth);//+ error1 + dis(ego_vehicle_state, npc_vehicle1_truth);
+dis1_state = {dis1}<={50};
+p1 = (1,-5,-8);
+p2 = (2, 1,+2);
+
+p4 =(12,14);
+p5 = p4 + (1,2);
+
+
+
+error1 = dis(p3, p5);
+
+error22= dis(npc_vehicle2_truth, npc_vehicle3);
+trace |= G dis1_state;
+
+//dis5 = 1;
+dis5= {(error1 + error22 +b2)/3 };
+dis6= {error1 +1+ error1+dis(ego_vehicle_state, npc_vehicle1_truth)+ ((22/(error1+error22*2*3*3)+23/error22)*23)*2 + b+ spd(npc_vehicle2, npc_vehicle1_truth) + 6};
+kkkkkkk ={ dis5 / dis(ego_vehicle_state, npc_vehicle1_truth) *error1 +9} < {spd(npc_vehicle2, npc_vehicle1_truth)+ dis6 };
+kkkkkkk1 = {dis(ego_vehicle_state, npc_vehicle1_truth)+ ((22/(error1+error22*2*3*3)+23/error22)*23)*2 + spd(npc_vehicle2, npc_vehicle1_truth) + 6};
+
+trace |=G[1,2] kkkkkkk;
+
+trace |=G[2,3] {dis(ego_vehicle_state, npc_vehicle1_truth)+ ((22/(error1+error22*2*3*3)+23/error22)*23)*2 + spd(npc_vehicle2, npc_vehicle1_truth) + 6} > {0};
+
+
+
+
+
+
+dis3 = dis(ego_vehicle_state, npc_vehicle3_truth);
+error3 = diff(npc_vehicle3, npc_vehicle3_truth);
+perception_detection3 = {dis3}<={50} -> {error3+1} <= {0.1};
+trace |=G perception_detection3;
+
+
+
+
+
+
+error1_state = {error1} <= {0.00000000000001};
+perception_detection1 = dis1_state -> error1_state;
+trace |= G {error1} <= {0.1};
+trace |= G perception_detection1;
+
+dis2 = dis(ego_vehicle_state, npc_vehicle2_truth);
+error2 = diff(npc_vehicle2, npc_vehicle2_truth);
+perception_detection2 = {dis2} <= {50} -> {error2} <= {0.1};
+trace |=G perception_detection2;
+
+
+trace |= G perception_detection1 & perception_detection2 & perception_detection3;
+
+safety1 = {dis1} > {1.0};
+trace |= G safety1;
+
+
+safety2 = {dis2} > {1.0};
+trace |= G safety2;
+
+
+safety3 = {dis3} > {1.0};
+trace |= G safety3;
+
+trace |= G safety1 & safety2 & safety3;
+
+p_required1 = lane_name->10.0;
+dis2required1 = dis(ego_vehicle_state, p_required1);
+position_statement1 = {dis2required1} < {10.0};
+trace |= F position_statement1;
+
+p_required2 = "lane_39"->50.0;
+dis2required2 = dis(ego_vehicle_state, p_required2);
+position_statement2 = {dis2required2} < {1.0};
+trace |= F position_statement2;
+
+trace |= F position_statement1 & position_statement2;
+
+v_required1 = (1,2,-3);
+velocity_dis = acc(npc_vehicle2,(1,2,-3)+v_required1);
+velocity_statement1 = {velocity_dis} < {0.000000005};
+trace |= G position_statement1 -> velocity_statement1;
+
+speed_required1 = 2^(1+2)*5/(4+3);
+speed_dis = spd(ego_vehicle_state, speed_required1);
+speed_statement1 = {speed_dis} < {5.0};
+trace |= G position_statement1 -> speed_statement1;
+
+trace |= G speed_statement1 U[0,1.2] position_statement1;
+
+trace |= F[0,4] speed_statement1 & ~position_statement1 ->  speed_statement1;
+
+trace |= X[1, 1.5] ((speed_statement1 -> ~ position_statement1) &  speed_statement1);
+
+statement = position_statement1 -> velocity_statement1;
+
+dis22  = {dis2} >{0};
+trace |= G (dis22 & statement);
+
+

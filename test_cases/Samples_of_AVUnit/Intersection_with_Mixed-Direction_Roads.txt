@@ -1,0 +1,62 @@
+//Intersection with mixed-direction roads
+map_name = "san_francisco";
+time = 12:00;
+weather = {rain:0.5, snow: 0.1, wetness: heavy};
+evn = Environment(time, weather);
+
+car_model = "gt_sensors";
+ego_init_position = "lane_150"->150; 
+ego_init_state = (ego_init_position);
+ego_target_position = "lane_158"->50;
+ego_target_state = (ego_target_position);
+vehicle_type = (car_model);
+ego_vehicle = AV(ego_init_state, ego_target_state, vehicle_type);
+
+//npc1: move from lane_153 to lane_617
+npc1_init_position =  "lane_153"->50;
+npc1_init_state = (npc1_init_position, ,6);
+npc1_dest_state = ("lane_617"->100);
+npc1 = Vehicle(npc1_init_state, , npc1_dest_state);
+
+//npc2: move from lane_153 to lane_158
+npc2_init_position =  "lane_153"->70;
+npc2_init_state = (npc2_init_position, ,6);
+npc2_dest_state = ("lane_158"->100);
+npc2 = Vehicle(npc2_init_state, , npc2_dest_state);
+
+//npc3: move from  lane_153 to lane_157
+npc3_init_position =  "lane_153"->90;
+npc3_init_state = (npc3_init_position, ,6);
+npc3_dest_state = ("lane_157"->100);
+npc3 = Vehicle(npc3_init_state, , npc3_dest_state);
+
+//npc4: move from lane_152 to lane_616
+npc4_init_position =  "lane_152"->50;
+npc4_init_state = (npc4_init_position, ,6);
+npc4_waypoint =(("lane_157"->110, ,8), ("lane_157"->200, ,5), ("lane_910"->2, ,5), ("lane_616"->10, ,10));
+npc4_dest_state = ("lane_616"->100);
+npc4 = Vehicle(npc4_init_state, Waypoint(npc4_waypoint) , npc4_dest_state);
+
+scenario0 = CreateScenario{load(map_name);
+			        ego_vehicle;
+			        {npc1, npc2, npc3, npc4}; 
+			        {}; // no pedestrians;
+			        {}; // no obstacles;
+			        evn;
+};
+
+Trace trace = EXE(scenario0);
+ego_state= trace[ego];
+npc1_truth= trace[truth][npc1];
+npc2_truth = trace[truth][npc2];
+npc3_truth =  trace[truth][npc3];
+npc4_truth =  trace[truth][npc4];
+
+dis1 = dis(ego_state, npc1_truth);
+dis2 = dis(ego_state, npc2_truth);
+dis3 = dis(ego_state, npc3_truth);
+dis4 = dis(ego_state, npc4_truth);
+
+// assertion 0
+trace |= (G (dis1>=0.5 & dis2>=0.5 & dis3>=0.5 &dis4>=0.5)) & (F (dis(ego_state, ego_target_position)<=2.0));
+

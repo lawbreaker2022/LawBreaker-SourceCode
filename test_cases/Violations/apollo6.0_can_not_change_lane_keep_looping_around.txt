@@ -1,0 +1,66 @@
+// intersection of two single-direction roads
+map_name = "san_francisco";
+time = 12:00;
+weather = {rain:0.5, snow: 0.1, wetness: heavy};
+evn = Environment(time, weather);
+
+car_model = "gt_sensors";
+ego_init_position ="lane_623"->50;
+ego_init_state = (ego_init_position);
+ego_target_position = "lane_146"->100;
+ego_target_state = (ego_target_position);
+vehicle_type = (car_model);
+ego_vehicle = AV(ego_init_state, ego_target_state, vehicle_type);
+
+//npc1: move from lane_627 to lane_145
+npc1_init_position =  "lane_627"->140;
+npc1_init_state = (npc1_init_position, ,6);
+npc1_waypoint =(("lane_627"->150, ,7), ("lane_627"->200, ,8), ("lane_899"->2, ,5), ("lane_145"->10, ,7));
+npc1_dest_state = ("lane_145"->130);
+npc1 = Vehicle(npc1_init_state, Waypoint(npc1_waypoint) , npc1_dest_state);
+
+//npc2: move from lane_627 to lane_151
+npc2_init_position =  "lane_627"->150;
+npc2_init_state = (npc2_init_position, ,8);
+npc2_dest_state = ("lane_151"->50);
+npc2 = Vehicle(npc2_init_state, , npc2_dest_state);
+
+//npc3: move from lane_626 to lane_150
+npc3_init_position =  "lane_626"->140;
+npc3_init_state = (npc3_init_position, ,7);
+npc3_dest_state = ("lane_150"->50);
+npc3 = Vehicle(npc3_init_state, , npc3_dest_state);
+
+//npc4: move from lane_625 to lane_149
+npc4_init_position =  "lane_625"->150;
+npc4_init_state = (npc4_init_position, ,4);
+npc4_dest_state = ("lane_149"->30);
+npc4 = Vehicle(npc4_init_state, , npc4_dest_state);
+
+scenario0 = CreateScenario{load(map_name);
+			        ego_vehicle;
+			        {npc1, npc2, npc3, npc4};
+			        {}; // no pedestrians;
+			        {}; // no obstacles;
+			        evn;
+};
+
+
+Trace trace = EXE(scenario0);
+//law44
+statement1 = currentLane.number >= 2;
+statement2 = (speed >= speedLimit.lowerLimit) & (speed <= speedLimit.upperLimit);
+statement3 = isLaneChanging & currentLane.number >= 2;
+statement4 = G(statement1 -> statement2);
+statement5 = G(statement3 -> ~PriorityNPCAhead);
+law44 = statement4 & statement5;
+
+//law46
+law_46_sub2 = G( (direction == left | direction == right | isTurningAround) -> (speed <= 30 ));
+law_46_sub3 = G( (rain >= 0.5 | fog >= 0.5 | snow >=0.5 | visibility <= 50 ) -> (speed <= 30));
+law46 = (law_46_sub2) & (law_46_sub3);
+
+trace |= law44 & law46;
+
+
+

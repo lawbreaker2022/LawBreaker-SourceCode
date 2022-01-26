@@ -1,0 +1,68 @@
+//lane change in the same road
+
+map_name = "san_francisco";
+car_model = "gt_sensors";
+    initial_position = "lane_221" -> 10;
+ego_init_state = (initial_position);
+target_position = "lane_220" -> 100;
+ego_target_state = (target_position);
+vehicle_type = (car_model);
+ego_vehicle = AV(ego_init_state, ego_target_state, vehicle_type);
+
+//npc1: start from lane_221 
+npc1_init_position = "lane_221" -> 20;
+npc1 = Vehicle((npc1_init_position, ,7.0));
+
+//npc2: start from lane_221
+npc2_init_position = "lane_221" -> 50;
+npc2 = Vehicle((npc2_init_position, , 7.0));
+
+//npc3: move from lane_220 to lane_231
+npc3_init_position = "lane_220" -> 10;
+npc3 = Vehicle((npc3_init_position, , 5.5), , ("lane_231"->100));
+
+//npc4: start from lane_220
+npc4_init_position = "lane_220" -> 30;
+npc4 = Vehicle((npc4_init_position, , 6.0));
+
+//npc5: move from lane_220 to lane_253
+npc5_init_state = ("lane_220" -> 50, ,7.0);
+npc5_waypoint = (("lane_220" -> 100, ,6.0), ("lane_1037" -> 0, ,5.0), ("lane_1037" -> 10, ,4.0), ("lane_253" -> 10, ,8.0));
+npc5 = Vehicle(npc5_init_state, Waypoint(npc5_waypoint),("lane_253" -> 200));
+
+
+time = 12:00;
+weather = {rain:0.5, snow: 0.1, wetness: heavy};
+evn = Environment(time, weather);
+
+scenario0 = CreateScenario{load(map_name);
+                 ego_vehicle;
+                 {npc1, npc2, npc3, npc4, npc5}; 
+                 {}; // no pedestrians;
+                 {}; // no obstacles;
+                 evn; 
+};
+
+Trace trace = EXE(scenario0);
+
+ego_vehicle_state = trace[ego];
+npc_vehicle1_truth = trace[truth][npc1];
+npc_vehicle2_truth = trace[truth][npc2];
+npc_vehicle3_truth = trace[truth][npc3];
+npc_vehicle4_truth = trace[truth][npc4];
+npc_vehicle5_truth = trace[truth][npc5];
+
+dis_target = dis(ego_vehicle_state, target_position);
+dis1 = dis(ego_vehicle_state, npc_vehicle1_truth);
+dis2 = dis(ego_vehicle_state, npc_vehicle2_truth);
+dis3 = dis(ego_vehicle_state, npc_vehicle3_truth);
+dis4 = dis(ego_vehicle_state, npc_vehicle4_truth);
+dis5 = dis(ego_vehicle_state, npc_vehicle5_truth);
+
+statement1 = dis1 >= 0.5;
+statement2 = dis2 >= 0.5;
+statement3 = dis3 >= 0.5;
+statement4 = dis4 >= 0.5;
+statement5 = dis5 >= 0.5;
+
+trace |= (G(statement4 & statement5 & statement1 & statement2 & statement3)) & (F dis_target <= 2);

@@ -1,0 +1,68 @@
+// T junction
+
+map_name = "san_francisco";
+time = 12:00;
+weather = {rain:0.5, snow: 0.1, wetness: heavy};
+evn = Environment(time, weather);
+
+car_model = "gt_sensors";
+ego_init_position = "lane_39"->30;   //default coordinate frame is ENU    10.2880001068115,
+ego_init_state = (ego_init_position);
+ego_target_position = "lane_40"->50; //default coordinate frame is ENU    10.1325969696045,
+ego_target_state = (ego_target_position);
+vehicle_type = (car_model);
+ego_vehicle = AV(ego_init_state, ego_target_state, vehicle_type);
+
+npc1_init_position =  "lane_42"->50;
+npc1_init_state = (npc1_init_position, ,5);
+npc1_dest_state = ("lane_78"->30);
+npc1 = Vehicle(npc1_init_state, , npc1_dest_state);
+
+npc2_init_position =  "lane_42"->40;
+npc2_init_state = (npc2_init_position, ,5);
+npc2_dest_state = ("lane_79"->30);
+npc2 = Vehicle(npc2_init_state, , npc2_dest_state);
+
+npc3_init_position =  "lane_42"->30;
+npc3_init_state = (npc3_init_position, ,5);
+npc3_dest_state = ("lane_76"->30);
+npc3 = Vehicle(npc3_init_state, , npc3_dest_state);
+
+ped_position = (553020.54, 4182693.69);
+ped_heading = 90 deg related to "lane_38"->30;
+ped_init_state= (ped_position, ped_heading, 1.0);
+ped_state_list = (((553020.54,4182693.69), ped_heading, 1.0),((553023.26, 4182671.82), ped_heading, 1.0));
+ped_motion = Waypoint(ped_state_list);
+ped = Pedestrian(ped_init_state, ped_motion);
+
+scenario0 = CreateScenario{load(map_name);
+			        ego_vehicle;
+			        {npc1, npc2, npc3}; // no other vehicles;
+			        {ped}; // no pedestrians;
+			        {}; // no obstacles;
+			        evn; // default environment
+			       // {}; // no traffic constraints
+};
+
+
+Trace trace = EXE(scenario0);
+ego_state= trace[ego];
+npc1_state= trace[perception][npc1];
+npc1_truth= trace[truth][npc1];
+npc2_state = trace[perception][npc2];
+npc2_truth = trace[truth][npc2];
+npc3_state= trace[perception][npc3];
+npc3_truth =  trace[truth][npc3];
+ped_state = trace[perception][ped];
+ped_truth = trace[truth][ped];
+
+dis1 = dis(ego_state, npc1_state);
+dis2 = dis(ego_state, npc2_state);
+dis3 = dis(ego_state, npc3_state);
+dis4 = dis(ego_state, ped_state);
+
+// assertion 0
+trace |= (G (dis1>=0.5 & dis2>=0.5 & dis3>=0.5 & dis4>=0.5)) & (F (dis(ego_state, ego_target_position)<=2.0));
+
+// assertion 1
+//trace |= F (dis(ego_state, ego_target_position)<=2.0)

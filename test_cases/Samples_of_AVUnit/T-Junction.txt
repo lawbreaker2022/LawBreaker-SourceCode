@@ -1,0 +1,86 @@
+// road merging or T junction
+map_name = "san_francisco";
+car_model = "gt_sensors";
+initial_position = "lane_317" -> 240;
+ego_init_state = (initial_position);
+target_position = "lane_321" -> 50;
+ego_target_state = (target_position);
+vehicle_type = (car_model);
+ego_vehicle = AV(ego_init_state, ego_target_state, vehicle_type);
+
+//npc1: move from lane_328 to lane_320
+npc1_init_position = "lane_328"->20;
+npc1_init_state = (npc1_init_position, ,5.0);
+wp11 = ("lane_328"->100, ,5.0);
+wp12 = ((553307.261867189, 4183201.9591673343), , 4.5);
+wp13= ((553309.3614155288, 4183208.8865965335), , 4.0);
+wp14= ((553305.65, 4183212.53), , 5.0);
+wp15 = ("lane_320"->50, ,6.0);
+npc1_waypoints = (wp11, wp12, wp13, wp14, wp15);
+npc1_destination = ("lane_320"->100);
+npc1 = Vehicle(npc1_init_state, Waypoint(npc1_waypoints));
+
+//npc2: move from lane_331 to lane_321
+npc2_init_position = "lane_331"->20;
+npc2_init_state = (npc2_init_position, ,5.0);
+wp21 = ("lane_331"->100, ,5.0);
+wp22 = ("lane_1160"->0, , 4.5);
+wp23= ((553315.2383076187, 4183207.2174681155), , 4.0);
+wp24= ((553312.2639423843, 4183213.1879271), , 4.0);
+wp25 = ("lane_321"->50, ,6.0);
+npc2_waypoints = (wp21, wp22, wp23, wp24, wp25);
+npc2_destination = ("lane_321"->100);
+npc2 = Vehicle(npc2_init_state, Waypoint(npc2_waypoints), npc2_destination);
+
+//npc3: move from lane_330 to lane_322
+npc3_init_position = "lane_330"->20;
+npc3_init_state = (npc3_init_position, ,5.0);
+wp31 = ("lane_330"->100, ,5.0);
+wp32 = ("lane_1161"->0, , 4.5);
+wp33= ((553319.5, 4183208.69), , 4.0);
+wp34 = ((553314.3420368667, 4183217.027038428), , 5.0);
+wp35 = ("lane_322"->50, ,6.0);
+npc3_waypoints = (wp31, wp32, wp33, wp34, wp35);
+npc3_destination = ("lane_322"->100);
+npc3 = Vehicle(npc3_init_state, Waypoint(npc3_waypoints), npc3_destination);
+
+//npc4: move from lane_329 to lane_323
+npc4_init_position = "lane_329"->20;
+npc4_init_state = (npc4_init_position, ,5.0);
+wp41 = ("lane_329"->50, ,6.0);
+wp42 = ("lane_1162"->0, , 5);
+wp43= ((553322.757594728, 4183206.63), , 3);
+wp44 = ((553316.4349628921, 4183219.8604124514), , 7.0);
+wp45 = ("lane_323"->50, ,5.0);
+npc4_waypoints = (wp41, wp42, wp43, wp44, wp45);
+npc4_destination = ("lane_323"->100);
+npc4 = Vehicle(npc4_init_state, Waypoint(npc4_waypoints), npc4_destination);
+
+time = 12:00;
+weather = {rain:0.5, snow: 0.1, wetness: heavy};
+evn = Environment(time, weather);
+
+scenario0 = CreateScenario{load(map_name);
+			        ego_vehicle;
+			        {npc1, npc2, npc3, npc4};
+			        {}; // no pedestrians;
+			        {}; // no obstacles;
+			        evn;
+};
+
+Trace trace = EXE(scenario0);
+
+ego_state= trace[ego];
+npc1_truth= trace[truth][npc1];
+npc2_truth = trace[truth][npc2];
+npc3_truth =  trace[truth][npc3];
+npc4_truth =  trace[truth][npc4];
+
+dis1 = dis(ego_state, npc1_truth);
+dis2 = dis(ego_state, npc2_truth);
+dis3 = dis(ego_state, npc3_truth);
+dis4 = dis(ego_state, npc4_truth);
+
+// assertion 0
+trace |= (G (dis1>=0.5 & dis2>=0.5 & dis3>=0.5 &dis4>=0.5)) & (F (dis(ego_state, target_position)<=2.0));
+

@@ -1,0 +1,74 @@
+pip install websocket
+pip install websockets
+pip install wsaccel
+pip install numpy
+
+
+Install the protocal:
+PROTOC_ZIP=protoc-3.14.0-linux-x86_64.zip
+curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.14.0/$PROTOC_ZIP
+sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
+sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
+rm -f $PROTOC_ZIP
+
+
+
+
+
+
+
+cd Desktop/src_traffic_rule/parser/grammar
+antlr4 -Dlanguage=Python3 -listener -no-visitor AVScenarios.g4 -o ../gen
+
+
+
+
+git remote add origin git@github.com:smallzjuer/Traffic_rule_language.git
+
+git init
+git add . 
+git commit -m 'bridge first version'
+git push -u origin master
+
+
+git status
+git add *
+git commit -m “更新说明”
+git pull
+git push origin master
+
+
+删掉所有大文件！
+git rm -r --cached ga_0_rule38
+git rm -r --cached ga_1_rule38
+
+git filter-branch -f --index-filter 'git rm --cached --ignore-unmatch rerun_for_videos/Intersection_with_Single-Direction_Roads/bugTestCase.txt'
+
+
+echo "# Traffic_Rules_STL" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin git@github.com:smallzjuer/Traffic_Rules_STL.git
+git push -u origin main
+
+
+
+# generate the protobuf
+sudo protoc -I=. --python_out=/home/sunsun/Desktop/src/src/bridge ./modules/drivers/proto/pointcloud.proto
+
+
+
+# Debug of apollo
+cd 
+cd Desktop/lgsvl+apollo/customized-Apollo/apollo
+./docker/scripts/dev_into.sh
+...
+cd /apollo/data/log
+tail -f control.INFO
+
+
+
+
+

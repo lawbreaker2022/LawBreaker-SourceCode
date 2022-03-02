@@ -562,7 +562,7 @@ def spec_scenario(spec, testcase, generations=0, pop_size=1, file_directory=None
 def test_scenario(direct, item):
     file = direct + item
 
-    log_direct ='Embed_Law_Into_Apollo-AFTER57-1/' + Path(item).stem
+    log_direct ='The_Results/' + Path(item).stem
     if not os.path.exists(log_direct):
         os.makedirs(log_direct)
     else:

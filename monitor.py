@@ -1062,7 +1062,7 @@ if __name__ == "__main__":
     extracted_script = ExtractAll(input_file,isGroundTruth)
     scenario_spec = extracted_script.Get_Specifications()
     all_agents = extracted_script.Get_AllAgents()
-    output_file = 'coverage/Intersection_with_Single-Direction_Roads/data/result17-11-2021-15-41-10.json'
+    output_file = 'Example_trace/test.json'
 
     with open(output_file) as f:
         data = json.load(f)  # read as a msg from apollo via websocket

@@ -25,7 +25,13 @@ Set the LGSVL to API-Only mode.
 	git clone https://github.com/lawbreaker2021/LawBreaker-SourceCode.git
 	cd LawBreaker-SourceCode
 	```
-2. Connect our bridge to the LGSVL and Apollo:
+2. Install Python API support for LGSVL.
+	```bash
+	cd LawBreaker-SourceCode/bridge/PythonAPImaster
+	pip3 install --user -e .
+	```
+
+3. Connect our bridge to the LGSVL and Apollo:
 	Go the bridge in the folder:/LawBreaker-SourceCode/bridge
 	```bash
 	cd /root_of_LawBreaker-SourceCode/bridge
@@ -36,7 +42,7 @@ Set the LGSVL to API-Only mode.
 	Modify the `SIMULATOR_HOST` and `SIMULATOR_PORT` of `Server` to your IP and port of LGSVL.
 	Modify the `BRIDGE_HOST` and `BRIDGE_PORT` of `Server` to your IP and port of Apollo.
 	
-3. Test the parser:
+4. Test the parser:
 	If the support for parser is properly installed, we can test it by running:
 	```bash
 	cd /root_of_LawBreaker-SourceCode

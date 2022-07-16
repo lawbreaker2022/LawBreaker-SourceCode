@@ -28,7 +28,9 @@ Set the LGSVL to API-Only mode.
 2. Install Python API support for LGSVL.
 	```bash
 	cd LawBreaker-SourceCode/bridge/PythonAPImaster
-	pip3 install --user -e .
+	pip3 install --user -e .  
+	##If "pip3 install --user -e ." fail, try the following command:
+	python3 -m pip install -r requirements.txt --user .
 	```
 
 3. Connect our bridge to the LGSVL and Apollo:

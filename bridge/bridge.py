@@ -366,7 +366,7 @@ class Server:
 
 
             self.ego.on_collision(self.AVS_on_collision)
-            self.ego.connect_bridge(os.environ.get("BRIDGE_HOST", "169.254.42.170") ,port = 9090)
+            self.ego.connect_bridge(os.environ.get("BRIDGE_HOST", "127.0.0.1") ,port = 9090)
             # bounding_box = ego.bounding_box()
             # print(bounding_box.size)
             self.Add_npc_vehicles_to_Lgsvl(npcList)
